@@ -209,7 +209,7 @@ class SpsToolbox:
             with tag('columns'):
                 for col in cols:
                     with tag('column'):
-                        line('label', f"{col}")
+                        line('label', f"'{col}'")
                         line('value', col)
         xml = indent(doc.getvalue(), indentation='\t')
         return xml
