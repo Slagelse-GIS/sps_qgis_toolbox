@@ -25,7 +25,7 @@ from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction
 from qgis.core import QgsProject
-from yattag import Doc, indent
+from yattag import Doc, indent, indentation
 
 # Initialize Qt resources from file resources.py
 from .resources import *
@@ -196,15 +196,47 @@ class SpsToolbox:
         with tag('datasource', ('displayname', props_dict['table'].split('.')[1]), ('endpoint', f'ep_{props_dict["dbname"]}'), ('name', props_dict['table'].split('.')[1])):
             doc.stag('table', ('geometrycolumn', props_dict['geometryColumn']), ('name', props_dict['table'].split('.')[1]), ('schema', props_dict['table'].split('.')[0]), ('pkcolumn', props_dict['key']))
         
-        return indent(doc.getvalue())
+        xml = indent(doc.getvalue(), indentation='\t')
+        return xml
 
-    def create_datasource(self):
+    def create_presentation(self, lyr):
+        cols = [x.name() for x in lyr.fields()]
+        doc, tag, text, line = Doc().ttl()
+
+        doc.asis('<?xml version="1.0" encoding="UTF-8"?>')
+        with tag('presentation'):
+            doc.stag('text', name='overskrift', plural=lyr.name(), value=lyr.name())
+            with tag('columns'):
+                for col in cols:
+                    with tag('column'):
+                        line('label', f"{col}")
+                        line('value', col)
+        xml = indent(doc.getvalue(), indentation='\t')
+        return xml
+
+
+    def create_snippet(self):
+        snippet_type = self.dlg.comboBox.currentText()
         active_lyr = self.dlg.mMapLayerComboBox.currentLayer()
-        if active_lyr.providerType() == 'postgres':
-            self.dlg.textEdit.setPlainText(self.datasource_xml(active_lyr))
+        if self.check_db():
+            if snippet_type == 'Datasource':
+                xml = self.datasource_xml(active_lyr)
+                self.dlg.textEdit.setPlainText(xml)
+            elif snippet_type == 'Presentation':
+                xml = self.create_presentation(active_lyr)
+                self.dlg.textEdit.setPlainText(xml)
         else:
             self.dlg.textEdit.setPlainText('Lag kommer IKKE fra en postgres database!')
-            
+
+    def check_db(self):
+        active_lyr = self.dlg.mMapLayerComboBox.currentLayer()
+        if active_lyr.providerType() == 'postgres':
+            return True
+        else:
+            return False
+
+    def populate_snippet_list(self):
+        self.dlg.comboBox.addItems(['Datasource', 'Presentation'])
 
     def run(self):
         """Run method that performs all the real work"""
@@ -214,7 +246,9 @@ class SpsToolbox:
         if self.first_start == True:
             self.first_start = False
             self.dlg = SpsToolboxDialog()
-            self.dlg.mMapLayerComboBox.currentIndexChanged.connect(self.create_datasource)
+            self.populate_snippet_list()
+            self.dlg.mMapLayerComboBox.currentIndexChanged.connect(self.create_snippet)
+            self.dlg.comboBox.currentIndexChanged.connect(self.create_snippet)
 
         # show the dialog
         self.dlg.show()
