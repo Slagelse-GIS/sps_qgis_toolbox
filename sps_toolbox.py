@@ -26,6 +26,7 @@ from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction
 from qgis.core import QgsProject
 from yattag import Doc, indent, indentation
+from subprocess import check_call
 
 # Initialize Qt resources from file resources.py
 from .resources import *
@@ -251,6 +252,12 @@ class SpsToolbox:
     def populate_snippet_list(self):
         self.dlg.comboBox.addItems(['Datasource', 'Presentation', 'Target'])
 
+    def copy_xml(self):
+        self.dlg.textEdit.selectAll()
+        self.dlg.textEdit.copy()
+        self.create_snippet()
+        
+
     def run(self):
         """Run method that performs all the real work"""
 
@@ -262,6 +269,7 @@ class SpsToolbox:
             self.populate_snippet_list()
             self.dlg.mMapLayerComboBox.currentIndexChanged.connect(self.create_snippet)
             self.dlg.comboBox.currentIndexChanged.connect(self.create_snippet)
+            self.dlg.pushButton.clicked.connect(self.copy_xml)
 
         # show the dialog
         self.dlg.show()
