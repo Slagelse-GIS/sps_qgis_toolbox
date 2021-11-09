@@ -199,7 +199,7 @@ class SpsToolbox:
         xml = indent(doc.getvalue(), indentation='\t')
         return xml
 
-    def create_presentation(self, lyr):
+    def presentation_xml(self, lyr):
         cols = [x.name() for x in lyr.fields()]
         doc, tag, text, line = Doc().ttl()
 
@@ -209,8 +209,18 @@ class SpsToolbox:
             with tag('columns'):
                 for col in cols:
                     with tag('column'):
+                        line('condition', f'Not IsNull({col})')
                         line('label', f"'{col}'")
                         line('value', col)
+        xml = indent(doc.getvalue(), indentation='\t')
+        return xml
+
+    def target_xml(self, lyr):
+        doc, tag, text = Doc().tagtext()
+
+        with tag('target', displayname=lyr.name().title(), presentation=f'[module:MODULNAVN.dir]/presentations/pres-{lyr.name()}', themecondition=f'theme-{lyr.name()}'):
+            doc.stag('datasource', name=lyr.name())
+        
         xml = indent(doc.getvalue(), indentation='\t')
         return xml
 
@@ -223,7 +233,10 @@ class SpsToolbox:
                 xml = self.datasource_xml(active_lyr)
                 self.dlg.textEdit.setPlainText(xml)
             elif snippet_type == 'Presentation':
-                xml = self.create_presentation(active_lyr)
+                xml = self.presentation_xml(active_lyr)
+                self.dlg.textEdit.setPlainText(xml)
+            elif snippet_type == 'Target':
+                xml = self.target_xml(active_lyr)
                 self.dlg.textEdit.setPlainText(xml)
         else:
             self.dlg.textEdit.setPlainText('Lag kommer IKKE fra en postgres database!')
@@ -236,7 +249,7 @@ class SpsToolbox:
             return False
 
     def populate_snippet_list(self):
-        self.dlg.comboBox.addItems(['Datasource', 'Presentation'])
+        self.dlg.comboBox.addItems(['Datasource', 'Presentation', 'Target'])
 
     def run(self):
         """Run method that performs all the real work"""
