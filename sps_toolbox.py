@@ -25,8 +25,8 @@ from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction
 from qgis.core import QgsWkbTypes
-from yattag import Doc, indent
 import random
+import xml.etree.ElementTree as ET
 
 # Initialize Qt resources from file resources.py
 from .resources import *
@@ -193,75 +193,131 @@ class SpsToolbox:
             else:
                 props_dict[props[0]] = props[1]
 
-        doc, tag, text = Doc().tagtext()
-        with tag('datasource', ('displayname', props_dict['table'].split('.')[1]), ('endpoint', f'ep_{props_dict["dbname"]}'), ('name', props_dict['table'].split('.')[1])):
-            doc.stag('table', ('geometrycolumn', props_dict['geometryColumn']), ('name', props_dict['table'].split('.')[1]), ('schema', props_dict['table'].split('.')[0]), ('pkcolumn', props_dict['key']))
+        ds_attrs = {
+            'displayname': props_dict['table'].split('.')[1],
+            'endpoint': f'ep_{props_dict["dbname"]}',
+            'name': props_dict['table'].split('.')[1],
+        }
+
+        table_attrs ={
+            'geometrycolumn': props_dict['geometryColumn'],
+            'name': props_dict['table'].split('.')[1],
+            'schema': props_dict['table'].split('.')[0],
+            'pkcolumn': props_dict['key']
+
+        }
         
-        xml = indent(doc.getvalue(), indentation='\t')
+        datasource = ET.Element('datasource', attrib=ds_attrs)
+        table = ET.SubElement(datasource, 'table', attrib=table_attrs)
+
+        ET.indent(datasource, '    ')
+        xml = ET.tostring(datasource, encoding='unicode')
+
         return xml
 
     def presentation_xml(self, lyr):
         cols = [x.name() for x in lyr.fields()]
-        doc, tag, text, line = Doc().ttl()
 
-        doc.asis('<?xml version="1.0" encoding="UTF-8"?>')
-        with tag('presentation'):
-            doc.stag('text', name='overskrift', plural=lyr.name(), value=lyr.name())
-            with tag('columns'):
-                with tag('column', format='heading'):
-                    line('label', 'KOLONNENAVN')
-                    line('value', 'KOLONNENAVN')
-                for col in cols:
-                    with tag('column'):
-                        line('condition', f'Not IsNull({col})')
-                        line('label', f"'{col}'")
-                        line('value', col)
-        xml = indent(doc.getvalue(), indentation='\t')
+        text_attrs = {
+            'name': 'overskrift',
+            'plural': lyr.name(),
+            'value': lyr.name()
+        }
+
+        presentation = ET.Element('presentation')
+        text = ET.SubElement(presentation, 'text', text_attrs)
+        columns = ET.SubElement(presentation, 'columns')
+
+        heading_col = ET.SubElement(columns, 'column', {'format': 'heading'})
+        label = ET.SubElement(heading_col, 'label')
+        label.text = 'KOLONNENAVN'
+        value = ET.SubElement(heading_col, 'value')
+        value.text = 'KOLONNENAVN'
+        
+        for col in cols:
+            column = ET.SubElement(columns, 'column')
+            condition = ET.SubElement(column, 'condition')
+            condition.text = f'Not IsNull({col})'
+            label = ET.SubElement(column, 'label')
+            label.text = f"'{col}'"
+            value = ET.SubElement(column, 'value')
+            value.text = col
+        
+        ET.indent(presentation, '    ')
+        xml = ET.tostring(presentation, encoding='unicode')
+        xml = '<?xml version="1.0" encoding="UTF-8"?>' + '\n' + xml
+        
         return xml
 
     def target_xml(self, lyr):
-        doc, tag, text = Doc().tagtext()
-
-        with tag('target', displayname=lyr.name().title(), presentation=f'[module:MODULNAVN.dir]/presentations/pres-{lyr.name()}', themecondition=f'theme-{lyr.name()}'):
-            doc.stag('datasource', name=lyr.name())
         
-        xml = indent(doc.getvalue(), indentation='\t')
+        target_attrs = {
+            'displayname': lyr.name().title(),
+            'presentation': f'[module:MODULNAVN.dir]/presentations/pres-{lyr.name()}',
+            'themecondition': f'theme-{lyr.name()}'
+        }
+        datasource_attrs = {
+            'name': lyr.name()
+        }
+        
+        target = ET.Element('target', attrib=target_attrs)
+        datasource = ET.SubElement(target ,'datasource', datasource_attrs)
+
+        ET.indent(target, '    ')
+        xml = ET.tostring(target, encoding='unicode')
+
         return xml
 
     def theme_xml(self, lyr):
         geom_type = QgsWkbTypes.geometryDisplayString(lyr.geometryType())
         random_rgb = ' '.join([str(x) for x in random.choices(range(256), k=3)])
 
-        doc, tag, text, line = Doc().ttl()
+        theme = ET.Element('theme')
 
-        doc.asis('<?xml version="1.0" encoding="UTF-8"?>')
-        with tag('theme'):
-            with tag('clientlayers'):
-                with tag('clientlayer', name='clientlayer'):
-                    line('singletile', 'true')
-            
-            with tag('cbinfo-metadata'):
-                with tag('param', name='metadata.text'):
-                    text('INDSÆT DIN METADATATEKST HER!!!!')
+        clientlayers = ET.SubElement(theme, 'clientlayers')
+        clientlayer = ET.SubElement(clientlayers, 'clientlayer', {'name': 'clientlayer'})
+        singletile = ET.SubElement(clientlayer, 'singletile')
+        singletile.text = 'true'
+        
+        cbinfo_metadata = ET.SubElement(theme, 'cbinfo-metadata')
+        param = ET.SubElement(cbinfo_metadata, 'param', {'name': 'metadata.text'})
+        param.text = 'INDSÆT BESKRIVELSE HER!'
 
-            with tag('layer', datasource=lyr.name(), downloadable="true", name=lyr.name(), type=geom_type):
-                text(f'[datasource:{lyr.name()}.mapfile-datasource]')
-                with tag('class'):
-                    line('name', lyr.name().title())
-                    with tag('style'):
-                        line('color', random_rgb)
-                        if geom_type == 'Point':
-                            line('outlinecolor', '0 0 0')
-                            line('size', '8')
-                            line('symbol', 'circle')
-                        elif geom_type =='Line':
-                            line('width', '4')
-                            line('linejoin', 'miter')
-                            line('symbol', 'circle')
-                        elif geom_type == 'Polygon':
-                            line('outlinecolor', '0 0 0')   
+        layer_attrs = {
+            'datasource': lyr.name(),
+            'downloadable': 'true',
+            'name': lyr.name(),
+            'type': geom_type.lower()
+        }
+        layer = ET.SubElement(theme, 'layer', layer_attrs)
+        layer.text = f'[datasource:{lyr.name()}.mapfile-datasource]' +'\n    '
+        lyr_class = ET.SubElement(layer, 'class')
+        name = ET.SubElement(lyr_class, 'name')
+        name.text = lyr.name().title()
+        style = ET.SubElement(lyr_class, 'style')
+        color = ET.SubElement(style, 'color')
+        color.text = random_rgb
+        if geom_type == 'Point':
+            outlinecolor = ET.SubElement(style, 'outlinecolor')
+            outlinecolor.text = '0 0 0'
+            size = ET.SubElement(style, 'size')
+            size.text = '8'
+            symbol = ET.SubElement(style, 'symbol')
+            symbol.text = 'circle'
+        elif geom_type == 'Line':
+            width = ET.SubElement(style, 'width')
+            width.text = '4'
+            linejoin = ET.SubElement(style, 'linejoin')
+            linejoin.text = 'miter'
+            symbol = ET.SubElement(style, 'symbol')
+            symbol.text = 'circle'
+        elif geom_type == 'Polygon':
+            outlinecolor = ET.SubElement(style, 'outlinecolor')
+            outlinecolor.text = '0 0 0'
 
-        xml = indent(doc.getvalue(), indent_text=True, indentation='\t')
+        ET.indent(theme, '    ')
+        xml = '<?xml version="1.0" encoding="UTF-8"?>' + '\n' + ET.tostring(theme, encoding='unicode')
+        
         return xml
         
     def create_snippet(self):
