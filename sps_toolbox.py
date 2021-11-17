@@ -208,6 +208,9 @@ class SpsToolbox:
         with tag('presentation'):
             doc.stag('text', name='overskrift', plural=lyr.name(), value=lyr.name())
             with tag('columns'):
+                with tag('column', format='heading'):
+                    line('label', 'KOLONNENAVN')
+                    line('value', 'KOLONNENAVN')
                 for col in cols:
                     with tag('column'):
                         line('condition', f'Not IsNull({col})')
