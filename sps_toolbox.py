@@ -24,10 +24,9 @@
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction
-from qgis.core import QgsProject
-# from yattag import Doc, indent
-from .yattag import Doc, indent
-from subprocess import check_call
+from qgis.core import QgsWkbTypes
+from yattag import Doc, indent
+import random
 
 # Initialize Qt resources from file resources.py
 from .resources import *
@@ -226,7 +225,42 @@ class SpsToolbox:
         xml = indent(doc.getvalue(), indentation='\t')
         return xml
 
+    def theme_xml(self, lyr):
+        geom_type = QgsWkbTypes.geometryDisplayString(lyr.geometryType())
+        random_rgb = ' '.join([str(x) for x in random.choices(range(256), k=3)])
 
+        doc, tag, text, line = Doc().ttl()
+
+        doc.asis('<?xml version="1.0" encoding="UTF-8"?>')
+        with tag('theme'):
+            with tag('clientlayers'):
+                with tag('clientlayer', name='clientlayer'):
+                    line('singletile', 'true')
+            
+            with tag('cbinfo-metadata'):
+                with tag('param', name='metadata.text'):
+                    text('INDSÆT DIN METADATATEKST HER!!!!')
+
+            with tag('layer', datasource=lyr.name(), downloadable="true", name=lyr.name(), type=geom_type):
+                text(f'[datasource:{lyr.name()}.mapfile-datasource]')
+                with tag('class'):
+                    line('name', lyr.name().title())
+                    with tag('style'):
+                        line('color', random_rgb)
+                        if geom_type == 'Point':
+                            line('outlinecolor', '0 0 0')
+                            line('size', '8')
+                            line('symbol', 'circle')
+                        elif geom_type =='Line':
+                            line('width', '4')
+                            line('linejoin', 'miter')
+                            line('symbol', 'circle')
+                        elif geom_type == 'Polygon':
+                            line('outlinecolor', '0 0 0')   
+
+        xml = indent(doc.getvalue(), indent_text=True, indentation='\t')
+        return xml
+        
     def create_snippet(self):
         snippet_type = self.dlg.comboBox.currentText()
         active_lyr = self.dlg.mMapLayerComboBox.currentLayer()
@@ -240,6 +274,9 @@ class SpsToolbox:
             elif snippet_type == 'Target':
                 xml = self.target_xml(active_lyr)
                 self.dlg.textEdit.setPlainText(xml)
+            elif snippet_type == 'Theme':
+                xml = self.theme_xml(active_lyr)
+                self.dlg.textEdit.setPlainText(xml)
         else:
             self.dlg.textEdit.setPlainText('Lag kommer IKKE fra en postgres database!')
 
@@ -251,7 +288,7 @@ class SpsToolbox:
             return False
 
     def populate_snippet_list(self):
-        self.dlg.comboBox.addItems(['Datasource', 'Presentation', 'Target'])
+        self.dlg.comboBox.addItems(['Datasource', 'Theme', 'Presentation', 'Target'])
 
     def copy_xml(self):
         self.dlg.textEdit.selectAll()
