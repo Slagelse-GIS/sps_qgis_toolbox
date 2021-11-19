@@ -27,6 +27,7 @@ from qgis.PyQt.QtWidgets import QAction
 from qgis.core import QgsWkbTypes, QgsRenderContext
 import random
 import xml.etree.ElementTree as ET
+from re import escape
 
 # Initialize Qt resources from file resources.py
 from .resources import *
@@ -314,7 +315,7 @@ class SpsToolbox:
                 name = ET.SubElement(value_class, 'name')
                 name.text = value
                 expression = ET.SubElement(value_class, 'expression')
-                expression.text = f'/^{value}$/'
+                expression.text = f'/^{escape(value)}$/'
                 style = ET.SubElement(value_class, 'style')
                 class_color = ET.SubElement(style, 'color')
                 class_color.text = f'{color[0]} {color[1]} {color[2]}'
