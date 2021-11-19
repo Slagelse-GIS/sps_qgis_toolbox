@@ -24,7 +24,7 @@
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction
-from qgis.core import QgsWkbTypes
+from qgis.core import QgsWkbTypes, QgsRenderContext
 import random
 import xml.etree.ElementTree as ET
 
@@ -268,9 +268,17 @@ class SpsToolbox:
 
         return xml
 
+    def col_unique_values(self, lyr, col):
+        idx = lyr.fields().indexOf(col)
+        unique_values = sorted(list(lyr.uniqueValues(idx)))
+        unique_values = [str(x) for x in unique_values]
+        return unique_values
+
     def theme_xml(self, lyr):
         geom_type = QgsWkbTypes.geometryDisplayString(lyr.geometryType())
         random_rgb = ' '.join([str(x) for x in random.choices(range(256), k=3)])
+
+        lyr_renderer = lyr.renderer()
 
         theme = ET.Element('theme')
 
@@ -291,34 +299,80 @@ class SpsToolbox:
         }
         layer = ET.SubElement(theme, 'layer', layer_attrs)
         layer.text = f'[datasource:{lyr.name()}.mapfile-datasource]' +'\n    '
-        lyr_class = ET.SubElement(layer, 'class')
-        name = ET.SubElement(lyr_class, 'name')
-        name.text = lyr.name().title()
-        style = ET.SubElement(lyr_class, 'style')
-        color = ET.SubElement(style, 'color')
-        color.text = random_rgb
-        if geom_type == 'Point':
-            outlinecolor = ET.SubElement(style, 'outlinecolor')
-            outlinecolor.text = '0 0 0'
-            size = ET.SubElement(style, 'size')
-            size.text = '8'
-            symbol = ET.SubElement(style, 'symbol')
-            symbol.text = 'circle'
-        elif geom_type == 'Line':
-            width = ET.SubElement(style, 'width')
-            width.text = '4'
-            linejoin = ET.SubElement(style, 'linejoin')
-            linejoin.text = 'miter'
-            symbol = ET.SubElement(style, 'symbol')
-            symbol.text = 'circle'
-        elif geom_type == 'Polygon':
-            outlinecolor = ET.SubElement(style, 'outlinecolor')
-            outlinecolor.text = '0 0 0'
 
-        ET.indent(theme, '    ')
-        xml = '<?xml version="1.0" encoding="UTF-8"?>' + '\n' + ET.tostring(theme, encoding='unicode')
-        
-        return xml
+        if lyr_renderer.type() == 'categorizedSymbol':
+            category_col = lyr_renderer.legendClassificationAttribute()
+
+            unique_values = self.col_unique_values(lyr, category_col)
+            fills = lyr_renderer.symbols(QgsRenderContext())
+            fills = [fill.color().getRgb() for fill in fills][:-1]
+
+            colors = {unique_values[i]: fills[i] for i in range(len(unique_values))}
+
+            for (value, color) in colors.items():
+                value_class = ET.SubElement(layer, 'class')
+                name = ET.SubElement(value_class, 'name')
+                name.text = value
+                expression = ET.SubElement(value_class, 'expression')
+                expression.text = f'/^{value}$/'
+                style = ET.SubElement(value_class, 'style')
+                class_color = ET.SubElement(style, 'color')
+                class_color.text = f'{color[0]} {color[1]} {color[2]}'
+                if geom_type == 'Point':
+                    outlinecolor = ET.SubElement(style, 'outlinecolor')
+                    outlinecolor.text = '0 0 0'
+                    size = ET.SubElement(style, 'size')
+                    size.text = '8'
+                    symbol = ET.SubElement(style, 'symbol')
+                    symbol.text = 'circle'
+                elif geom_type == 'Line':
+                    width = ET.SubElement(style, 'width')
+                    width.text = '4'
+                    linejoin = ET.SubElement(style, 'linejoin')
+                    linejoin.text = 'miter'
+                    symbol = ET.SubElement(style, 'symbol')
+                    symbol.text = 'circle'
+                elif geom_type == 'Polygon':
+                    outlinecolor = ET.SubElement(style, 'outlinecolor')
+                    outlinecolor.text = '0 0 0'
+
+            classitem = ET.SubElement(layer, 'classitem')
+            classitem.text = category_col
+
+            ET.indent(theme, '    ')
+            xml = '<?xml version="1.0" encoding="UTF-8"?>' + '\n' + ET.tostring(theme, encoding='unicode')
+            
+            return xml
+
+        else:
+            lyr_class = ET.SubElement(layer, 'class')
+            name = ET.SubElement(lyr_class, 'name')
+            name.text = lyr.name().title()
+            style = ET.SubElement(lyr_class, 'style')
+            color = ET.SubElement(style, 'color')
+            color.text = random_rgb
+            if geom_type == 'Point':
+                outlinecolor = ET.SubElement(style, 'outlinecolor')
+                outlinecolor.text = '0 0 0'
+                size = ET.SubElement(style, 'size')
+                size.text = '8'
+                symbol = ET.SubElement(style, 'symbol')
+                symbol.text = 'circle'
+            elif geom_type == 'Line':
+                width = ET.SubElement(style, 'width')
+                width.text = '4'
+                linejoin = ET.SubElement(style, 'linejoin')
+                linejoin.text = 'miter'
+                symbol = ET.SubElement(style, 'symbol')
+                symbol.text = 'circle'
+            elif geom_type == 'Polygon':
+                outlinecolor = ET.SubElement(style, 'outlinecolor')
+                outlinecolor.text = '0 0 0'
+
+            ET.indent(theme, '    ')
+            xml = '<?xml version="1.0" encoding="UTF-8"?>' + '\n' + ET.tostring(theme, encoding='unicode')
+            
+            return xml
         
     def create_snippet(self):
         snippet_type = self.dlg.comboBox.currentText()
