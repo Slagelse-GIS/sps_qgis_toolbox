@@ -196,7 +196,7 @@ class SpsToolbox:
 
         ds_attrs = {
             'displayname': props_dict['table'].split('.')[1],
-            'endpoint': f'ep_{props_dict["dbname"]}',
+            'endpoint': 'ep_k330',
             'name': props_dict['table'].split('.')[1],
         }
 
