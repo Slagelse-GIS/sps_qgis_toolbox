@@ -16,8 +16,20 @@
   <layout class="QGridLayout" name="gridLayout">
    <item row="0" column="0">
     <widget class="QLabel" name="label">
+     <property name="font">
+      <font>
+       <pointsize>12</pointsize>
+       <underline>false</underline>
+      </font>
+     </property>
      <property name="text">
       <string>Vælg et lag</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+     </property>
+     <property name="indent">
+      <number>20</number>
      </property>
     </widget>
    </item>
@@ -26,6 +38,24 @@
    </item>
    <item row="1" column="0">
     <layout class="QVBoxLayout" name="verticalLayout">
+     <item>
+      <widget class="QLabel" name="label_2">
+       <property name="font">
+        <font>
+         <pointsize>14</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
+         <strikeout>false</strikeout>
+        </font>
+       </property>
+       <property name="text">
+        <string>Datasource</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+      </widget>
+     </item>
      <item>
       <widget class="QTextEdit" name="textDs"/>
      </item>
@@ -41,6 +71,23 @@
    <item row="1" column="1">
     <layout class="QVBoxLayout" name="verticalLayout_2">
      <item>
+      <widget class="QLabel" name="label_3">
+       <property name="font">
+        <font>
+         <pointsize>14</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
+        </font>
+       </property>
+       <property name="text">
+        <string>Theme</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+      </widget>
+     </item>
+     <item>
       <widget class="QTextEdit" name="textTheme"/>
      </item>
      <item>
@@ -55,6 +102,23 @@
    <item row="2" column="0">
     <layout class="QVBoxLayout" name="verticalLayout_4">
      <item>
+      <widget class="QLabel" name="label_4">
+       <property name="font">
+        <font>
+         <pointsize>14</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
+        </font>
+       </property>
+       <property name="text">
+        <string>Target</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+      </widget>
+     </item>
+     <item>
       <widget class="QTextEdit" name="textTarget"/>
      </item>
      <item>
@@ -68,6 +132,23 @@
    </item>
    <item row="2" column="1">
     <layout class="QVBoxLayout" name="verticalLayout_3">
+     <item>
+      <widget class="QLabel" name="label_5">
+       <property name="font">
+        <font>
+         <pointsize>14</pointsize>
+         <weight>75</weight>
+         <bold>true</bold>
+        </font>
+       </property>
+       <property name="text">
+        <string>Presentation</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+      </widget>
+     </item>
      <item>
       <widget class="QTextEdit" name="textPres"/>
      </item>
