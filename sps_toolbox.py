@@ -376,23 +376,25 @@ class SpsToolbox:
             return xml
         
     def create_snippet(self):
-        snippet_type = self.dlg.comboBox.currentText()
+        # snippet_type = self.dlg.comboBox.currentText()
         active_lyr = self.dlg.mMapLayerComboBox.currentLayer()
         if self.check_db():
-            if snippet_type == 'Datasource':
-                xml = self.datasource_xml(active_lyr)
-                self.dlg.textEdit.setPlainText(xml)
-            elif snippet_type == 'Presentation':
-                xml = self.presentation_xml(active_lyr)
-                self.dlg.textEdit.setPlainText(xml)
-            elif snippet_type == 'Target':
-                xml = self.target_xml(active_lyr)
-                self.dlg.textEdit.setPlainText(xml)
-            elif snippet_type == 'Theme':
-                xml = self.theme_xml(active_lyr)
-                self.dlg.textEdit.setPlainText(xml)
+            ds_xml = self.datasource_xml(active_lyr)
+            self.dlg.textDs.setPlainText(ds_xml)
+
+            theme_xml = self.theme_xml(active_lyr)
+            self.dlg.textTheme.setPlainText(theme_xml)
+
+            pres_xml = self.presentation_xml(active_lyr)
+            self.dlg.textPres.setPlainText(pres_xml)
+            
+            target_xml = self.target_xml(active_lyr)
+            self.dlg.textTarget.setPlainText(target_xml)
         else:
-            self.dlg.textEdit.setPlainText('Lag kommer IKKE fra en postgres database!')
+            self.dlg.textTarget.setPlainText('Lag kommer IKKE fra en postgres database!')
+            self.dlg.textDs.setPlainText('Lag kommer IKKE fra en postgres database!')
+            self.dlg.textTheme.setPlainText('Lag kommer IKKE fra en postgres database!')
+            self.dlg.textPres.setPlainText('Lag kommer IKKE fra en postgres database!')
 
     def check_db(self):
         active_lyr = self.dlg.mMapLayerComboBox.currentLayer()
@@ -400,9 +402,6 @@ class SpsToolbox:
             return True
         else:
             return False
-
-    def populate_snippet_list(self):
-        self.dlg.comboBox.addItems(['Datasource', 'Theme', 'Presentation', 'Target'])
 
     def copy_xml(self):
         self.dlg.textEdit.selectAll()
@@ -418,10 +417,9 @@ class SpsToolbox:
         if self.first_start == True:
             self.first_start = False
             self.dlg = SpsToolboxDialog()
-            self.populate_snippet_list()
+            self.create_snippet()
             self.dlg.mMapLayerComboBox.currentIndexChanged.connect(self.create_snippet)
-            self.dlg.comboBox.currentIndexChanged.connect(self.create_snippet)
-            self.dlg.pushButton.clicked.connect(self.copy_xml)
+            # self.dlg.pushButton.clicked.connect(self.copy_xml)
 
         # show the dialog
         self.dlg.show()
