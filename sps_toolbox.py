@@ -403,10 +403,12 @@ class SpsToolbox:
         else:
             return False
 
-    def copy_xml(self):
-        self.dlg.textEdit.selectAll()
-        self.dlg.textEdit.copy()
-        self.create_snippet()
+    def copy_xml(self, textField):
+        textField.selectAll()
+        textField.copy()
+        text_cursor = textField.textCursor()
+        text_cursor.clearSelection()
+        textField.setTextCursor(text_cursor)
         
 
     def run(self):
@@ -419,7 +421,12 @@ class SpsToolbox:
             self.dlg = SpsToolboxDialog()
             self.create_snippet()
             self.dlg.mMapLayerComboBox.currentIndexChanged.connect(self.create_snippet)
-            # self.dlg.pushButton.clicked.connect(self.copy_xml)
+
+            # Forbind knapper til copyxml function
+            self.dlg.copyBtnDs.clicked.connect(lambda: self.copy_xml(self.dlg.textDs))
+            self.dlg.copyBtnTheme.clicked.connect(lambda: self.copy_xml(self.dlg.textTheme))
+            self.dlg.copyBtnTarget.clicked.connect(lambda: self.copy_xml(self.dlg.textTarget))
+            self.dlg.copyBtnPres.clicked.connect(lambda: self.copy_xml(self.dlg.textPres))
 
         # show the dialog
         self.dlg.show()
